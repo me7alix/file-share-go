@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload with Drag and Drop</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5em;
+        }
+        #dropZone {
+            border: 2px dashed #4caf50;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+            color: #4caf50;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        #dropZone.dragging {
+            background-color: #e0f7e0;
+            border-color: #2e7d32;
+        }
+        #progressContainer {
+            width: 90%;
+            max-width: 400px;
+            margin: 10px auto;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            height: 20px;
+            border-radius: 5px;
+            display: none;
+            box-sizing: border-box;
+        }
+        #progressBar {
+            height: 100%;
+            width: 0;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            border-radius: 5px;
+        }
+        #status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload a File</h1>
+    <div id="dropZone">Drag and drop a file here or tap to select</div>
+    <input type="file" id="fileInput" style="display: none;">
+    <p id="status"></p>
+
+    <div id="progressContainer">
+        <div id="progressBar">0%</div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById("fileInput");
+        const progressContainer = document.getElementById("progressContainer");
+        const progressBar = document.getElementById("progressBar");
+        const status = document.getElementById("status");
+
+        dropZone.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+
+        dropZone.addEventListener("dragover", (event) => {
+            event.preventDefault();
+            dropZone.classList.add("dragging");
+        });
+
+        dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragging"));
+
+        dropZone.addEventListener("drop", (event) => {
+            event.preventDefault();
+            dropZone.classList.remove("dragging");
+            const file = event.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            progressContainer.style.display = "block";
+            progressBar.style.width = "0%";
+            progressBar.textContent = "0%";
+            status.textContent = "Uploading...";
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `${window.location.origin}/upload`, true);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    progressBar.style.width = `${percentComplete}%`;
+                    progressBar.textContent = `${percentComplete}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    status.textContent = "File uploaded successfully!";
+                    progressBar.style.width = "100%";
+                    progressBar.textContent = "100%";
+                } else {
+                    status.textContent = "Failed to upload the file.";
+                }
+            };
+
+            xhr.onerror = () => {
+                status.textContent = "Error occurred during the upload.";
+            };
+
+            xhr.send(formData);
+        }
+    </script>
+</body>
+</html>
